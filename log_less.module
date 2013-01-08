@@ -1,0 +1,94 @@
+<?php
+/**
+ * Implements hook_menu().
+ */
+function log_less_menu_alter(&$items) {
+  $items['admin/reports/dblog']['page callback'] = 'log_less_overview';
+  $items['admin/reports/dblog']['file path'] = drupal_get_path('module', 'log_less');
+  $items['admin/reports/dblog']['file'] = 'log_less.module';
+  
+  $items['admin/reports/dblog-details'] = array(
+    'title' => 'Recent log messages',
+    'description' => 'View events that have recently been logged.',
+    'page callback' => 'dblog_overview',
+    'access arguments' => array('access site reports'),
+    'weight' => -1,
+    'file path' => drupal_get_path('module', 'dblog'),
+    'file' => 'dblog.admin.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+}
+
+function log_less_overview(){
+  module_load_include('inc', 'dblog', 'dblog.admin');
+
+  $entries = get_watchdogs();
+  $levels = watchdog_severity_levels();
+  $logmsgs = array();
+  
+  foreach($entries as $entry) {
+    $log = build_log_message($entry);
+    if (!isset($logmsgs[$log])) {
+      $logmsgs[$log]['data'] = array(
+        'message' => $log,
+        'count' => 1,
+        'type' => $entry->type,
+        'severity' => $levels[$entry->severity],
+        'referer' => $entry->referer,
+        'uid' => $entry->uid == 0 ? 'Anonymous' : 'Authenticated',
+        'last_occurence' => format_date($entry->timestamp, 'custom', 'h:m d M Y'),
+        );
+      $logmsgs[$log]['class'] = array($levels[$entry->severity]);
+      $logmsgs[$log]['no_striping'] = TRUE;
+    } else {
+      $logmsgs[$log]['data']['count']++;
+    }
+  }
+
+  $header = array(
+    t('Message'),
+    t('Count'),
+    t('Type'),
+    t('Severity'),
+    t('Last Referer'),
+    t('Last User'),
+    t('Last Occurence'),
+  );
+  
+  $build['dblog_clear_log_form'] = drupal_get_form('dblog_clear_log_form');
+  $build['log_less_table'] = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $logmsgs,
+    '#attributes' => array('id' => 'admin-dblog'),
+    '#empty' => t('No log messages available.'),
+  );
+  $build['dblog-details'] = array(
+    '#type' => 'markup',
+    '#markup' => l(t('View detailed log'), 'admin/reports/dblog-details'),
+  );
+  return $build;
+}
+
+function get_watchdogs() {
+  return db_select('watchdog', 'w')
+          ->fields('w')
+          ->orderBy('w.timestamp', 'DESC')
+          ->execute()->fetchAllAssoc('wid');
+}
+
+/*
+ *
+ */
+function build_log_message($entry) {
+  // Check for required properties.
+  if (isset($entry->message) && isset($entry->variables)) {
+    if ($entry->variables === 'N;') {
+      return t($entry->message);
+    }
+    else {
+      return t($entry->message, unserialize($entry->variables));
+    }
+  }
+}

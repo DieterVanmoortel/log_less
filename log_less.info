@@ -1,0 +1,8 @@
+name = Log Less
+description = Pinpoint the important monsters in your Lochs
+version = 7.x-dev
+
+package = Administration
+core = 7.x
+php = 5.3
+dependencies[] = dblog
