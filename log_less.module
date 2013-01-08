@@ -79,16 +79,18 @@ function get_watchdogs() {
 }
 
 /*
- *
+ * 
  */
 function build_log_message($entry) {
   // Check for required properties.
   if (isset($entry->message) && isset($entry->variables)) {
     if ($entry->variables === 'N;') {
-      return t($entry->message);
+      $msg = t($entry->message);
     }
     else {
-      return t($entry->message, unserialize($entry->variables));
+      $msg = t($entry->message, unserialize($entry->variables));
     }
+    $msg = strlen($msg) > 250 ? substr($msg, 0, 250) : $msg;
+    return $msg;
   }
 }
