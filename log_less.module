@@ -45,7 +45,12 @@ function log_less_overview(){
       $logmsgs[$log]['data']['count']++;
     }
   }
+  $pager_height = 15;
+  $total_msgs = count($logmsgs);
+  $page = pager_default_initialize($total_msgs, $pager_height);
+  $logmsgs = array_slice($logmsgs, $page * $pager_height, $pager_height);
 
+  // build table
   $header = array(
     t('Message'),
     t('Count'),
@@ -68,6 +73,15 @@ function log_less_overview(){
     '#type' => 'markup',
     '#markup' => l(t('View detailed log'), 'admin/reports/dblog-details'),
   );
+
+  // set pager
+  
+
+  $build['pager'] = array(
+    '#theme' => 'pager',
+    '#quantity' => $pager_height,
+  );
+  
   return $build;
 }
 
